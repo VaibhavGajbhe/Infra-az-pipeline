@@ -1,0 +1,30 @@
+Azure Infrastructure Pipeline & Azure DevOps Pipeline
+
+Azure Infrastructure Pipeline:
+An Azure infrastructure pipeline automates the provisioning and management of cloud resources using Infrastructure as Code (IaC) tools such as ARM templates, Bicep, or Terraform. This pipeline ensures consistent, repeatable, and version-controlled deployments of infrastructure components like virtual machines, networks, storage accounts, and more.
+
+Key Steps:
+1. Define infrastructure as code (e.g., ARM, Bicep, Terraform).
+2. Store code in a version control system (e.g., Git).
+3. Use Azure DevOps Pipeline to automate validation, testing, and deployment.
+4. Apply changes to Azure environments (dev, test, prod) using pipeline stages.
+
+Azure DevOps Pipeline:
+Azure DevOps Pipeline is a CI/CD (Continuous Integration/Continuous Deployment) service that automates building, testing, and deploying applications and infrastructure. It supports YAML and classic UI pipelines.
+
+Key Features:
+- Source code integration (GitHub, Azure Repos).
+- Automated build and release workflows.
+- Integration with Azure services and third-party tools.
+- Environment approvals and gates.
+- Artifact management and deployment strategies.
+
+Typical Pipeline Stages:
+1. Build: Compile code, run tests, create artifacts.
+2. Release: Deploy artifacts to target environments.
+3. Monitor: Track deployments, collect logs, and monitor health.
+
+Benefits:
+- Faster, reliable deployments.
+- Reduced manual errors.
+- Improved collaboration and traceability.
