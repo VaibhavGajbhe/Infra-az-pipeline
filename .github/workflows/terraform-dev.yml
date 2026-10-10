@@ -1,36 +1,111 @@
-# This is a basic workflow to help you get started with Actions
+trigger: none
 
-name: CI
+pool: AgentRomanoff
 
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+variables:
+  working-dir : '$(System.DefaultWorkingDirectory)/env/dev/'
+  
+  
+stages:
+  - stage: CodeQuality
+    displayName: SonarCube Scanner STAGE
+    jobs:
+      - job: SonarSCanner
+        displayName: Sonar Scanner JOB  
+        steps:
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+        - script: dir
+          displayName: 'List current directory'
+          
+        - checkout: self
+          submodules: false
+          lfs: false
+          fetchDepth: 1
+        - task: SonarQubePrepare@7
+          inputs:
+            SonarQube: 'SonarQube'
+            scannerMode: 'cli'
+            configMode: 'manual'
+            cliProjectKey: 'AvengerScan'
+            cliSources: '.'
+            
+        - task: SonarQubeAnalyze@7
+          inputs:
+            jdkversion: 'JAVA_HOME_17_X64'
+        - task: SonarQubePublish@7
+          inputs:
+            pollingTimeoutSec: '300'
+        
+    
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
-jobs:
-  # This workflow contains a single job called "build"
-  build:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+        
+  - stage: InitValidatePlanStage
+    displayName: Init Validate Plan STAGE
+    jobs: 
+    - job: InitValidatePlan
+      displayName: Init Validate Plan JOB
+      steps:
+      - task: TerraformTask@5
+        displayName: Terraform Init
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(working-dir)'
+          commandOptions: '-reconfigure'
+          backendServiceArm: 'myServiceConnection'
+          backendAzureRmOverrideSubscriptionID: '224ca6aa-8178-4cd2-bcee-797840d267cf'
+          backendAzureRmResourceGroupName: 'dev-hulk-rg'
+          backendAzureRmStorageAccountName: 'marvelstatefile01'
+          backendAzureRmContainerName: 'statefile-container'
+          backendAzureRmKey: 'dev.terraform.tfstate'
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
-
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+      - task: TerraformTask@5
+        displayName: Terraform Valiadate
+        inputs:
+          provider: 'azurerm'
+          command: 'validate'
+          workingDirectory: $(working-dir)
+      
+      - task: tfsec@1
+        displayName: tfsec 
+        inputs:
+          version: 'v1.26.0'
+          debug: true
+          dir: '$(working-dir)'
+          publishTestResults: true
+      
+      - task: TerraformTask@5
+        displayName: Terraform Plan
+        inputs:
+          provider: 'azurerm'
+          command: 'plan'
+          workingDirectory: '$(working-dir)'
+          environmentServiceNameAzureRM: 'myServiceConnection'
+          
+  - stage: InitAndApply 
+    displayName: Init and Apply STAGE
+    jobs:
+    - job: InitandApply
+      displayName: Init and Apply JOB
+      steps:
+      - task: TerraformTask@5
+        displayName: Terraform Init
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(working-dir)'
+          commandOptions: '-reconfigure'
+          backendServiceArm: 'myServiceConnection'
+          backendAzureRmOverrideSubscriptionID: '224ca6aa-8178-4cd2-bcee-797840d267cf'
+          backendAzureRmResourceGroupName: 'dev-hulk-rg'
+          backendAzureRmStorageAccountName: 'marvelstatefile01'
+          backendAzureRmContainerName: 'statefile-container'
+          backendAzureRmKey: 'dev.terraform.tfstate'
+    
+      - task: TerraformTask@5
+        displayName: Terraform Apply
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(working-dir)'
+          environmentServiceNameAzureRM: 'myServiceConnection'
